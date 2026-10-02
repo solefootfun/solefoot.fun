@@ -136,6 +136,142 @@ contract SoleFunRoundTest {
         VM.stopPrank();
     }
 
+    function testWalletCanEnterOnlyOncePerRound() public {
+        game.startRound();
+
+        VM.startPrank(ALICE);
+        game.submitEntry("ipfs://alice-foot");
+        VM.expectRevert(SoleFunRound.AlreadyEntered.selector);
+        game.submitEntry("ipfs://alice-second-foot");
+        VM.stopPrank();
+    }
+
+    function testRejectsEmptyAndOversizedMetadataURI() public {
+        game.startRound();
+
+        VM.startPrank(ALICE);
+        VM.expectRevert(SoleFunRound.InvalidMetadataURI.selector);
+        game.submitEntry("");
+
+        bytes memory oversized = new bytes(game.MAX_METADATA_URI_LENGTH() + 1);
+        for (uint256 i; i < oversized.length; i += 1) {
+            oversized[i] = "a";
+        }
+        VM.expectRevert(SoleFunRound.InvalidMetadataURI.selector);
+        game.submitEntry(string(oversized));
+        VM.stopPrank();
+    }
+
+    function testZeroEntryRoundFinalizesWithoutMovingFunds() public {
+        game.startRound();
+        SoleFunRound.Round memory round = game.getRound(1);
+
+        VM.warp(round.endsAt);
+        game.finalizeRound(1);
+
+        round = game.getRound(1);
+        require(round.finalized, "round not finalized");
+        _assertEq(round.winningEntryId, 0, "zero-entry winner should be empty");
+        _assertEq(round.winnerAmount, 0, "zero-entry winner amount");
+        _assertEq(round.buybackAmount, 0, "zero-entry buyback amount");
+        _assertEq(usdg.balanceOf(address(game)), 0, "contract retained funds");
+    }
+
+    function testTieKeepsTheEntryThatReachedTheScoreFirst() public {
+        game.startRound();
+
+        VM.prank(ALICE);
+        game.submitEntry("ipfs://alice-foot");
+        VM.prank(BOB);
+        game.submitEntry("ipfs://bob-foot");
+
+        VM.prank(CAROL);
+        game.vote(1);
+        VM.prank(DAVE);
+        game.vote(2);
+
+        SoleFunRound.Round memory round = game.getRound(1);
+        _assertEq(round.winningEntryId, 1, "tie should keep first leader");
+    }
+
+    function testCannotVoteAfterRoundIsFinalized() public {
+        game.startRound();
+
+        VM.prank(ALICE);
+        game.submitEntry("ipfs://alice-foot");
+
+        SoleFunRound.Round memory round = game.getRound(1);
+        VM.warp(round.endsAt);
+        game.finalizeRound(1);
+
+        VM.prank(BOB);
+        VM.expectRevert(SoleFunRound.RoundNotActive.selector);
+        game.vote(1);
+    }
+
+    function testTokenGateAlsoAppliesToVoting() public {
+        MockHistoricalVotes gateToken = new MockHistoricalVotes();
+        uint256 minimumVotingPower = 50_000 ether;
+
+        gateToken.setVotingPower(ALICE, minimumVotingPower);
+        gateToken.setVotingPower(BOB, minimumVotingPower);
+        gateToken.setVotingPower(CAROL, minimumVotingPower - 1);
+
+        game.setNextTokenGate(address(gateToken), minimumVotingPower, true);
+        game.startRound();
+
+        VM.prank(ALICE);
+        game.submitEntry("ipfs://alice-foot");
+        VM.prank(BOB);
+        game.submitEntry("ipfs://bob-foot");
+
+        VM.prank(CAROL);
+        VM.expectRevert(SoleFunRound.TokenGateRequirementNotMet.selector);
+        game.vote(1);
+    }
+
+    function testFuzzCompetitivePayoutNeverExceedsPool(uint256 rawFee, uint8 rawVotesForBob)
+        public
+    {
+        uint256 fee = (rawFee % 1_000_000_000) + 1;
+        uint8 votesForBob = rawVotesForBob % 3;
+
+        game.setNextRoundConfig(fee, 60);
+        game.startRound();
+
+        address[] memory entrants = new address[](3);
+        entrants[0] = ALICE;
+        entrants[1] = BOB;
+        entrants[2] = CAROL;
+
+        for (uint256 i; i < entrants.length; i += 1) {
+            usdg.mint(entrants[i], fee);
+            VM.prank(entrants[i]);
+            usdg.approve(address(game), fee);
+            VM.prank(entrants[i]);
+            game.submitEntry("ipfs://fuzz-foot");
+        }
+
+        if (votesForBob > 0) {
+            VM.prank(address(0xF00D1));
+            game.vote(2);
+        }
+        if (votesForBob > 1) {
+            VM.prank(address(0xF00D2));
+            game.vote(2);
+        }
+
+        SoleFunRound.Round memory round = game.getRound(1);
+        uint256 pool = round.poolBalance;
+        VM.warp(round.endsAt);
+        game.finalizeRound(1);
+
+        round = game.getRound(1);
+        _assertEq(round.poolBalance, pool, "pool changed during finalize");
+        _assertEq(round.winnerAmount + round.buybackAmount, pool, "payouts exceed pool");
+        _assertEq(usdg.balanceOf(address(game)), 0, "funds left after finalize");
+    }
+
     function testConfigChangesOnlyAffectTheNextRound() public {
         game.startRound();
         game.setNextRoundConfig(1_000_000, 24 hours);

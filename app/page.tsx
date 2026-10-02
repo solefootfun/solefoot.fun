@@ -239,22 +239,32 @@ function Round({ wallet, ready, notice, setNotice, connect }: { wallet: string |
   const [history, setHistory] = useState<ChainRound[]>([]);
   const [oldestLoaded, setOldestLoaded] = useState<number | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const applyCurrent = (body: RoundsResponse) => {
+    const current = body.rounds.find((round) => round.id === body.currentId);
+    if (!current) return null;
+    setCurrentRound((previous) => previous?.id === current.id && current.entries.length === 0 ? { ...current, entries: previous.entries, finalizationTx: previous.finalizationTx } : current);
+    setNextConfig(body.nextConfig);
+    setRoundId(BigInt(current.id));
+    setPool(BigInt(current.pool));
+    setEntries(BigInt(current.entryCount));
+    setEndsAt(current.endsAt);
+    setFinalized(current.finalized);
+    setChainNow(body.chainTime);
+    setSyncedAt(Date.now());
+    return current;
+  };
+  async function fetchSummary() {
+    const response = await fetch("/api/rounds?summary=1", { cache: "no-store" });
+    const body = await response.json() as RoundsResponse;
+    if (!response.ok) throw new Error(body.error || "Could not read round.");
+    applyCurrent(body);
+  }
   async function fetchRounds(before?: number) {
     const response = await fetch(`/api/rounds${before ? `?before=${before}` : ""}`, { cache: "no-store" });
     const body = await response.json() as RoundsResponse;
     if (!response.ok) throw new Error(body.error || "Could not read rounds.");
-    const current = body.rounds.find((round) => round.id === body.currentId);
-    if (before === undefined && current) {
-      setCurrentRound(current);
-      setNextConfig(body.nextConfig);
-      setRoundId(BigInt(current.id));
-      setPool(BigInt(current.pool));
-      setEntries(BigInt(current.entryCount));
-      setEndsAt(current.endsAt);
-      setFinalized(current.finalized);
-      setChainNow(body.chainTime);
-      setSyncedAt(Date.now());
-    }
+    if (before === undefined) applyCurrent(body);
     const past = body.rounds.filter((round) => round.id !== body.currentId || before !== undefined);
     setHistory((previous) => {
       const merged = new Map(previous.map((round) => [round.id, round]));
@@ -263,11 +273,13 @@ function Round({ wallet, ready, notice, setNotice, connect }: { wallet: string |
     });
     if (body.rounds.length) setOldestLoaded((oldest) => Math.min(oldest ?? Infinity, body.rounds[body.rounds.length - 1].id));
   }
-  async function refresh() { try { await fetchRounds(); } catch (e) { setNotice(e instanceof Error ? e.message : "Could not read round."); } }
+  async function refreshSummary() { try { await fetchSummary(); } catch (e) { setNotice(e instanceof Error ? e.message : "Could not read round."); } }
+  async function refreshDetails() { setDetailsLoading(true); try { await fetchRounds(); } catch { /* The summary panel remains live even if gallery/IPFS reads are slow. */ } finally { setDetailsLoading(false); } }
+  async function refresh() { await refreshSummary(); void refreshDetails(); }
   async function loadOlder() { if (!oldestLoaded || loadingOlder) return; setLoadingOlder(true); try { await fetchRounds(oldestLoaded); } catch (e) { setNotice(e instanceof Error ? e.message : "Could not load older rounds."); } finally { setLoadingOlder(false); } }
-  useEffect(() => { void refresh(); const timer = window.setInterval(() => void refresh(), 15000); return () => window.clearInterval(timer); }, []); useEffect(() => { const tick = () => { if (finalized) return setTimeLeft("SETTLED"); const estimatedChainNow = chainNow + Math.floor((Date.now() - syncedAt) / 1000); const remaining = Math.max(0, endsAt - estimatedChainNow); setTimeLeft(endsAt && syncedAt ? countdown(remaining) : "—"); }; tick(); const timer = window.setInterval(tick, 1000); return () => window.clearInterval(timer); }, [endsAt, chainNow, syncedAt, finalized]); useEffect(() => () => stream.current?.getTracks().forEach((t) => t.stop()), []); useEffect(() => { if (open && video.current && stream.current) video.current.srcObject = stream.current; }, [open]);
-  async function submit() { if (!wallet) return connect(); if (!preview) return setNotice("Take a real camera photo first."); setBusy(true); setEntryConfirmed(false); try { setNotice("Uploading camera photo to IPFS..."); const imageBlob = await fetch(preview).then((response) => response.blob()); const form = new FormData(); form.append("file", imageBlob, `sole-${Date.now()}.jpg`); const uploadResponse = await fetch("/api/upload", { method: "POST", body: form }); const uploadText = await uploadResponse.text(); let upload: { uri?: string; error?: unknown } = {}; try { upload = JSON.parse(uploadText) as { uri?: string; error?: unknown }; } catch { throw new Error(`Upload API returned ${uploadResponse.status}: ${uploadText.slice(0, 300) || "empty response"}`); } const uploadError = typeof upload.error === "string" ? upload.error : JSON.stringify(upload.error); if (!uploadResponse.ok || !upload.uri) throw new Error(uploadError || "IPFS upload failed."); const [currentHex, blockTime] = await Promise.all([call(CONTRACT, S.current), latestBlockTimestamp()]); const currentId = word(currentHex, 0); if (!currentId) throw new Error("No active round yet. Wait for the keeper to start one."); const currentRound = await call(CONTRACT, S.round + u(currentId)); if (word(currentRound, 14) !== 0n || Number(word(currentRound, 1)) <= blockTime + 10) throw new Error("Round ended while uploading. Wait for the next round and submit again."); const entryFee = word(currentRound, 4); if (entryFee <= 0n) throw new Error("Invalid round entry price."); setNotice(`Photo uploaded. Approve ${usdg(entryFee.toString())} USDG to submit...`); const approval = await send(wallet, USDG, S.approve + pad(CONTRACT) + u(entryFee)); setTx(approval); const bytes = new TextEncoder().encode(upload.uri); const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""); const data = S.submit + u(32) + u(bytes.length) + hex.padEnd(Math.ceil(bytes.length / 32) * 64, "0"); const h = await send(wallet, CONTRACT, data); setTx(h); setEntryConfirmed(true); setPreview(null); setNotice(`Photo confirmed on-chain in Round #${currentId}. It now appears in that round gallery.`); await refresh(); } catch (e) { setEntryConfirmed(false); setNotice(e instanceof Error ? e.message : "submitEntry failed."); } finally { setBusy(false); } }
-  async function vote(entryId: number) { if (!wallet) return connect(); if (!currentRound || currentRound.finalized || !currentRound.entries.some((entry) => entry.id === entryId)) return; setBusy(true); try { const h = await send(wallet, CONTRACT, S.vote + u(entryId)); setTx(h); setNotice(`Vote for entry #${entryId} confirmed on-chain.`); await refresh(); } catch (e) { setNotice(e instanceof Error ? e.message : "Vote failed."); } finally { setBusy(false); } }
+  useEffect(() => { void refresh(); const fast = window.setInterval(() => void refreshSummary(), 15000); const slow = window.setInterval(() => void refreshDetails(), 60000); return () => { window.clearInterval(fast); window.clearInterval(slow); }; }, []); useEffect(() => { const tick = () => { if (finalized) return setTimeLeft("SETTLED"); const estimatedChainNow = chainNow + Math.floor((Date.now() - syncedAt) / 1000); const remaining = Math.max(0, endsAt - estimatedChainNow); setTimeLeft(endsAt && syncedAt ? countdown(remaining) : "—"); }; tick(); const timer = window.setInterval(tick, 1000); return () => window.clearInterval(timer); }, [endsAt, chainNow, syncedAt, finalized]); useEffect(() => () => stream.current?.getTracks().forEach((t) => t.stop()), []); useEffect(() => { if (open && video.current && stream.current) video.current.srcObject = stream.current; }, [open]);
+  async function submit() { if (!wallet) return connect(); if (!preview) return setNotice("Take a real camera photo first."); setBusy(true); setEntryConfirmed(false); try { setNotice("Uploading camera photo to IPFS..."); const imageBlob = await fetch(preview).then((response) => response.blob()); const form = new FormData(); form.append("file", imageBlob, `sole-${Date.now()}.jpg`); const uploadResponse = await fetch("/api/upload", { method: "POST", body: form }); const uploadText = await uploadResponse.text(); let upload: { uri?: string; error?: unknown } = {}; try { upload = JSON.parse(uploadText) as { uri?: string; error?: unknown }; } catch { throw new Error(`Upload API returned ${uploadResponse.status}: ${uploadText.slice(0, 300) || "empty response"}`); } const uploadError = typeof upload.error === "string" ? upload.error : JSON.stringify(upload.error); if (!uploadResponse.ok || !upload.uri) throw new Error(uploadError || "IPFS upload failed."); const [currentHex, blockTime] = await Promise.all([call(CONTRACT, S.current), latestBlockTimestamp()]); const currentId = word(currentHex, 0); if (!currentId) throw new Error("No active round yet. Wait for the keeper to start one."); const currentRound = await call(CONTRACT, S.round + u(currentId)); if (word(currentRound, 14) !== 0n || Number(word(currentRound, 1)) <= blockTime + 10) throw new Error("Round ended while uploading. Wait for the next round and submit again."); const entryFee = word(currentRound, 4); if (entryFee <= 0n) throw new Error("Invalid round entry price."); setNotice(`Photo uploaded. Approve ${usdg(entryFee.toString())} USDG to submit...`); const approval = await send(wallet, USDG, S.approve + pad(CONTRACT) + u(entryFee)); setTx(approval); const bytes = new TextEncoder().encode(upload.uri); const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""); const data = S.submit + u(32) + u(bytes.length) + hex.padEnd(Math.ceil(bytes.length / 32) * 64, "0"); const h = await send(wallet, CONTRACT, data); setTx(h); setEntryConfirmed(true); setPreview(null); setNotice(`Photo confirmed on-chain in Round #${currentId}. It now appears in that round gallery.`); await refreshSummary(); void refreshDetails(); } catch (e) { setEntryConfirmed(false); setNotice(e instanceof Error ? e.message : "submitEntry failed."); } finally { setBusy(false); } }
+  async function vote(entryId: number) { if (!wallet) return connect(); if (!currentRound || currentRound.finalized || !currentRound.entries.some((entry) => entry.id === entryId)) return; setBusy(true); try { const h = await send(wallet, CONTRACT, S.vote + u(entryId)); setTx(h); setNotice(`Vote for entry #${entryId} confirmed on-chain.`); await refreshSummary(); void refreshDetails(); } catch (e) { setNotice(e instanceof Error ? e.message : "Vote failed."); } finally { setBusy(false); } }
   async function camera() { try { stream.current = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }); setOpen(true); } catch { setError("Camera permission was denied or camera is unavailable."); } }
   function capture() { const v = video.current; if (!v?.videoWidth) return; const c = document.createElement("canvas"); c.width = v.videoWidth; c.height = v.videoHeight; c.getContext("2d")?.drawImage(v, 0, 0); setPreview(c.toDataURL("image/jpeg", .88)); setEntryConfirmed(false); stream.current?.getTracks().forEach((t) => t.stop()); stream.current = null; setOpen(false); }
   const completedWithEntries = history.filter((round) => round.finalized && round.entryCount > 0);
@@ -291,10 +303,12 @@ function Round({ wallet, ready, notice, setNotice, connect }: { wallet: string |
             <p className="mt-2 text-5xl font-black">{usdg(pool.toString())}</p>
             <p className="text-sm text-white/45">USDG · {String(entries)} CONFIRMED ENTRIES</p>
             <p className="mt-2 font-mono text-xs text-white/45">{awaitingNextRound ? "NEXT ROUND ENTRY PRICE" : "ENTRY PRICE"} · {displayedEntryPrice ? `${Number(usdg(displayedEntryPrice))} USDG` : "—"}</p>
+            <p className="mt-2 font-mono text-[10px] text-white/35">{currentRound ? `ROUND #${currentRound.id} STARTED WITH ${usdg(currentRound.entryFee)} USDG ENTRY PRICE` : "SYNCING ROUND SUMMARY..."}</p>
             {awaitingNextRound && nextConfig && <p className="mt-3 rounded-lg border border-[#c5dfa2]/20 bg-[#c5dfa2]/5 p-3 text-xs leading-5 text-[#c5dfa2]">The keeper will open the next round at {Number(usdg(nextConfig.entryFee))} USDG for {durationLabel(nextConfig.duration)}.</p>}
             <div className="mt-6 border-t border-white/10 pt-4">
               <p className="font-mono text-xs text-white/45">TIME LEFT</p>
               <p className="mt-1 font-mono text-3xl font-bold text-[#c8ff55]">{timeLeft}</p>
+              <p className="mt-1 font-mono text-[10px] text-white/35">{currentRound ? `ENDS AT ${new Date(currentRound.endsAt * 1000).toLocaleString("en-US", { timeZone: "Europe/Istanbul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} ISTANBUL TIME` : "WAITING FOR CHAIN TIME..."}</p>
             </div>
           </div>
         </div>
@@ -337,7 +351,7 @@ function Round({ wallet, ready, notice, setNotice, connect }: { wallet: string |
               </article>
             ))}
           </div>
-        ) : <div className="border border-dashed border-white/20 p-8 font-mono text-sm text-white/45">No paid entries in this round yet.</div>}
+        ) : <div className="border border-dashed border-white/20 p-8 font-mono text-sm text-white/45">{detailsLoading && entries > 0n ? "Loading confirmed photos from IPFS..." : "No paid entries in this round yet."}</div>}
         {currentRound && currentRound.entryCount > currentRound.entries.length && <p className="mt-3 font-mono text-xs text-white/45">Showing the first {currentRound.entries.length} of {currentRound.entryCount} entries.</p>}
       </section>
 

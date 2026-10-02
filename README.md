@@ -85,24 +85,29 @@ temporarily offline, USDG remains in the round contract and upkeep can be retrie
 
 ## Proof, not promises
 
-The Foundry suite currently contains **9 passing contract tests** covering:
+The Foundry suite currently contains **25 contract tests** covering:
 
 - 70/30 competitive settlement and most-voted winner selection
 - 100% return to a solo entrant
+- zero-entry finalization
+- tie behavior, where the first entry to reach a score stays ahead
 - one entry and one vote per wallet
+- metadata validation and finalized-round rejection paths
 - rejection of early finalization
 - future-round-only configuration updates
 - optional historical token-gate snapshots
 - owner-only emergency recovery and permanent stop behavior
+- Keeper V2 ownership, pause, authorized upkeep, restart and emergency forwarding
 
-The same commands can be run locally or wired into any CI runner without requiring mainnet keys.
+GitHub Actions runs the frontend production build, Solidity formatting check, and complete Foundry
+suite on every push and pull request. The checks do not require mainnet keys.
 
 ```bash
 npm ci
 npm run build
 
 forge fmt --check
-forge test -vv
+forge test --offline
 ```
 
 ## Documentation
@@ -112,6 +117,7 @@ forge test -vv
 | [System architecture](docs/ARCHITECTURE.md) | How camera, IPFS, wallet, contracts and VPS automation fit together |
 | [Contracts and live addresses](docs/CONTRACTS.md) | Ownership, public methods, payouts and emergency behavior |
 | [Testing guide](docs/TESTING.md) | What is covered, how to run it and what tests cannot guarantee |
+| [Live proof](docs/LIVE_PROOF.md) | Mainnet deployment, automation and settlement evidence |
 | [Contract deployment notes](contracts/README.md) | Foundry configuration and deployment commands |
 
 ## Local development
