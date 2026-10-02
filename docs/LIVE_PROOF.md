@@ -19,6 +19,7 @@ Explorer  https://robinhoodchain.blockscout.com
 | Round contract | `0x81F2108A8B25943BdF26811714c78C6beF1704da` | [Blockscout](https://robinhoodchain.blockscout.com/address/0x81F2108A8B25943BdF26811714c78C6beF1704da) |
 | Keeper V2 | `0x5956a06B5b2D93416392C04aF52c2c38864730f3` | [Blockscout](https://robinhoodchain.blockscout.com/address/0x5956a06B5b2D93416392C04aF52c2c38864730f3) |
 | USDG token | `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` | [Blockscout](https://robinhoodchain.blockscout.com/address/0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168) |
+| SOLE token | `0x0155c6D2B30cfB6f233e3F92a2F9Da1DB4BcF550` | [Blockscout](https://robinhoodchain.blockscout.com/address/0x0155c6D2B30cfB6f233e3F92a2F9Da1DB4BcF550) |
 | Keeper signer / treasury | `0x0d31ddB91b7073fb785e146e049b7F71F8D305Fc` | [Blockscout](https://robinhoodchain.blockscout.com/address/0x0d31ddB91b7073fb785e146e049b7F71F8D305Fc) |
 
 ## Deployment and ownership evidence

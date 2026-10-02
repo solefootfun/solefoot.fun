@@ -56,14 +56,19 @@ operation; the interface and docs do not claim otherwise.
 | Round | [`0x81F2…04da`](https://robinhoodchain.blockscout.com/address/0x81F2108A8B25943BdF26811714c78C6beF1704da) | Entries, votes, pool accounting and payouts |
 | Keeper V2 | [`0x5956…30f3`](https://robinhoodchain.blockscout.com/address/0x5956a06B5b2D93416392C04aF52c2c38864730f3) | Finalizes an ended round and starts the next one |
 | USDG | [`0x5fc5…d168`](https://robinhoodchain.blockscout.com/address/0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168) | ERC-20 entry and payout asset |
+| SOLE | [`0x0155…F550`](https://robinhoodchain.blockscout.com/address/0x0155c6D2B30cfB6f233e3F92a2F9Da1DB4BcF550) | solefoot token contract |
 
 ```text
 Network       Robinhood Chain mainnet
 Chain ID      4663
 Entry price   1 USDG
 Round length  24 hours
-Token gate    Disabled until the project token exists
+Token gate    Disabled until enabled for future rounds
 ```
+
+Buy SOLE through the official PonsFamily launchpad:
+
+https://www.ponsfamily.com/launchpad/0x0155c6D2B30cfB6f233e3F92a2F9Da1DB4BcF550
 
 ## Architecture
 

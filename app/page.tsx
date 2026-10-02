@@ -12,6 +12,8 @@ const CONTRACT = "0x81F2108A8B25943BdF26811714c78C6beF1704da";
 const USDG = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168";
 const KEEPER_CONTRACT = "0x5956a06B5b2D93416392C04aF52c2c38864730f3";
 const TREASURY = "0x0d31ddB91b7073fb785e146e049b7F71F8D305Fc";
+const SOLE_TOKEN = "0x0155c6D2B30cfB6f233e3F92a2F9Da1DB4BcF550";
+const BUY_LINK = "https://www.ponsfamily.com/launchpad/0x0155c6D2B30cfB6f233e3F92a2F9Da1DB4BcF550";
 const CHAIN_ID = "0x1237";
 const RH = { chainId: CHAIN_ID, chainName: "Robinhood Chain", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: ["https://rpc.mainnet.chain.robinhood.com"], blockExplorerUrls: ["https://robinhoodchain.blockscout.com"] };
 const S = { current: "0x9cbe5efd", round: "0x8f1327c0", approve: "0x095ea7b3", start: "0x55e3f086", submit: "0x2b00cd64", vote: "0x0121b93f", finalize: "0x3469f6e2" };
@@ -113,9 +115,19 @@ function HomeView({ onRound }: { onRound: () => void }) {
         <p className="mt-8 max-w-[390px] text-base leading-7 text-[#a7a89c] sm:text-lg">Your camera. Your sole. Your shot at the pool.<br />Snap a foot photo, win the votes, take the prize.</p>
         <div className="mt-8 flex flex-wrap items-center gap-5">
           <motion.button onClick={onRound} whileHover={reducedMotion ? {} : { y: -3 }} whileTap={{ scale: .97 }} className="flex items-center gap-6 rounded-full bg-[#ff653f] px-7 py-4 text-sm font-bold text-[#171812] shadow-[0_5px_0_#82331f]">Enter the round <ArrowUpRight size={20} /></motion.button>
+          <a href={BUY_LINK} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-full border border-[#c5dfa2]/30 px-5 py-4 font-mono text-[10px] font-bold text-[#c5dfa2] transition-colors hover:bg-[#c5dfa2] hover:text-black">BUY SOLE <ArrowUpRight size={14} /></a>
           <a href="#how-it-works" className="flex items-center gap-2 text-xs font-medium text-[#b9baaf] transition-colors hover:text-white">How it works <ArrowDown size={14} /></a>
         </div>
         <p className="mt-7 flex items-center gap-2 font-mono text-[10px] tracking-wider text-[#777a6c]"><span className="h-1 w-1 rounded-full bg-[#c5dfa2]" /> BUILT ON ROBINHOOD CHAIN</p>
+        <div className="mt-5 max-w-[520px] rounded-2xl border border-white/10 bg-[#1b1e17]/80 p-4 backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-mono text-[9px] tracking-[.2em] text-[#ff997c]">SOLE TOKEN CA</p>
+              <p className="mt-2 break-all font-mono text-xs text-[#d7dec9]">{SOLE_TOKEN}</p>
+            </div>
+            <a href={`https://robinhoodchain.blockscout.com/address/${SOLE_TOKEN}`} target="_blank" rel="noreferrer" className="shrink-0 rounded-full border border-white/15 px-4 py-2 font-mono text-[10px] text-[#b7c4a8] hover:border-[#c5dfa2]/50 hover:text-white">VIEW CA ↗</a>
+          </div>
+        </div>
       </motion.div>
       <div className="hero-scene relative mx-auto h-[390px] w-full max-w-[580px] sm:h-[510px] lg:h-[590px]" aria-label="Decorative 3D cartoon foot sculpture">
         <div className="scene-orbit scene-orbit-one" /><div className="scene-orbit scene-orbit-two" />
@@ -168,6 +180,7 @@ function DocsView({ onRound }: { onRound: () => void }) {
     { name: "Round contract", address: CONTRACT, note: "Entries, votes, winner selection and USDG payouts.", tag: "CONTRACT", icon: Trophy },
     { name: "Keeper contract", address: KEEPER_CONTRACT, note: "Settles ended rounds and starts the next one.", tag: "CONTRACT", icon: Clock3 },
     { name: "USDG", address: USDG, note: "The payment token used for entries and prizes.", tag: "TOKEN", icon: Wallet },
+    { name: "SOLE token", address: SOLE_TOKEN, note: "Official solefoot token contract. Token gate remains off until enabled for future rounds.", tag: "TOKEN", icon: Footprints },
     { name: "Buyback treasury", address: TREASURY, note: "Receives the 30% treasury share. This wallet also signs the VPS keeper transactions.", tag: "WALLET", icon: ShieldCheck },
   ];
   return <main className="mx-auto max-w-7xl px-5 pb-12 sm:px-8">
@@ -219,6 +232,12 @@ function DocsView({ onRound }: { onRound: () => void }) {
     <section id="docs-addresses" className="scroll-mt-8 border-t border-white/10 py-14">
       <p className="font-mono text-[10px] tracking-[.2em] text-[#ff997c]">04 / ADDRESS BOOK</p><h2 className="mt-3 text-3xl font-bold tracking-[-.045em] sm:text-4xl">Follow the footprints.</h2><p className="mt-3 text-sm text-[#97a48a]">Robinhood Chain mainnet · Chain ID 4663. Every link opens Blockscout.</p>
       <div className="mt-7 grid gap-4 md:grid-cols-2">{links.map(({ name, address, note, tag, icon: Icon }) => <a key={address} href={`https://robinhoodchain.blockscout.com/address/${address}`} target="_blank" rel="noreferrer" className="group min-w-0 rounded-2xl border border-white/10 bg-[#1b1e17] p-6 transition-colors hover:border-[#c5dfa2]/40"><div className="flex items-center justify-between"><Icon size={21} className="text-[#c5dfa2]" /><span className="font-mono text-[9px] tracking-wider text-[#859774]">{tag} ↗</span></div><h3 className="mt-4 text-lg font-bold">{name}</h3><p className="mt-2 text-sm leading-6 text-[#94a185]">{note}</p><p className="mt-4 break-all rounded-lg bg-black/20 p-3 font-mono text-[10px] leading-5 text-[#c3ccba]">{address}</p></a>)}</div>
+      <div className="mt-5 rounded-2xl border border-[#ff7957]/30 bg-[#ff7957]/10 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div><p className="font-mono text-[10px] tracking-[.2em] text-[#ff997c]">BUY SOLE</p><p className="mt-2 text-sm leading-6 text-[#adb99c]">Use the official PonsFamily launchpad link. Always match the CA before trading.</p></div>
+          <a href={BUY_LINK} target="_blank" rel="noreferrer" className="rounded-full bg-[#ff7957] px-6 py-3 font-mono text-xs font-bold text-black transition-colors hover:bg-[#e5ecda]">OPEN BUY LINK ↗</a>
+        </div>
+      </div>
     </section>
 
     <section className="border-t border-white/10 py-12"><h2 className="text-2xl font-bold tracking-tight">Small print. Clear answers.</h2><div className="mt-6 divide-y divide-white/10">{[

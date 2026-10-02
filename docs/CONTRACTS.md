@@ -7,6 +7,7 @@
 | `SoleFunRound` | [`0x81F2108A8B25943BdF26811714c78C6beF1704da`](https://robinhoodchain.blockscout.com/address/0x81F2108A8B25943BdF26811714c78C6beF1704da) |
 | `SoleFunKeeperV2` | [`0x5956a06B5b2D93416392C04aF52c2c38864730f3`](https://robinhoodchain.blockscout.com/address/0x5956a06B5b2D93416392C04aF52c2c38864730f3) |
 | USDG | [`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`](https://robinhoodchain.blockscout.com/address/0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168) |
+| SOLE | [`0x0155c6D2B30cfB6f233e3F92a2F9Da1DB4BcF550`](https://robinhoodchain.blockscout.com/address/0x0155c6D2B30cfB6f233e3F92a2F9Da1DB4BcF550) |
 
 ## `SoleFunRound`
 
@@ -17,7 +18,11 @@
 - `vote(entryId)` adds the caller's single vote to an existing entry.
 
 Both actions enforce the optional token gate when it is enabled for that round. The gate is currently
-disabled.
+disabled, even though the SOLE token contract exists.
+
+Official SOLE buy link:
+
+https://www.ponsfamily.com/launchpad/0x0155c6D2B30cfB6f233e3F92a2F9Da1DB4BcF550
 
 ### Settlement
 
