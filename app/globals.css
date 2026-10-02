@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: #141513;
+  color: #f3f0e7;
+  font-family: Arial, Helvetica, sans-serif;
+}
+button, a { -webkit-tap-highlight-color: transparent; }
+::selection { background: #ff653f; color: #141513; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 2px solid #c5dfa2; outline-offset: 5px; }
+.hero-scene { perspective: 1000px; }
+.scene-orbit { position: absolute; left: 5%; top: 20%; width: 90%; height: 60%; border: 1px solid #464c39; border-radius: 50%; pointer-events: none; }
+.scene-orbit-one { transform: rotate(-32deg) rotateX(38deg); }
+.scene-orbit-two { transform: rotate(32deg) rotateX(50deg); opacity: .35; }
+.scene-sphere { position: absolute; border-radius: 50%; box-shadow: inset -10px -12px 18px #0005, inset 4px 5px 9px #fff5, 8px 18px 25px #0004; }
+.scene-sphere-cream { left: 2%; top: 29%; width: 44px; height: 44px; background: radial-gradient(circle at 30% 25%, #f7fde6, #a4b284 60%, #49543d); }
+.scene-sphere-orange { right: 1%; bottom: 21%; width: 26px; height: 26px; background: radial-gradient(circle at 30% 25%, #ffc098, #ff653f 55%, #91301b); }
+.step-card { transition: border-color .2s ease; }
+.step-card:hover { border-color: #6c7655; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

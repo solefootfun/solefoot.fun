@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+cache/
+broadcast/
+.env*
+!.env.example
+!**/.env.example
+
+# Local-only files and signing material
+.DS_Store
+*.tsbuildinfo
+keystore/
+keystores/
+*.keystore
+*.pem
+*.key
