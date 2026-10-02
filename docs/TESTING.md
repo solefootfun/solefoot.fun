@@ -17,7 +17,7 @@ forge fmt --check
 forge test --offline
 ```
 
-The current Foundry suite contains 25 tests across the round and keeper contracts.
+The current Foundry suite contains 27 checks across the round and keeper contracts.
 
 `test/SoleFunRound.t.sol` covers:
 
@@ -49,14 +49,25 @@ The current Foundry suite contains 25 tests across the round and keeper contract
 8. owner emergency forwarding;
 9. non-owner emergency forwarding rejection.
 
+`test/SoleFunRoundInvariant.t.sol` adds two invariant/property checks. Foundry runs randomized
+sequences of round startup, entries, votes, time jumps, finalization and emergency recovery through a
+handler contract, then verifies:
+
+1. the USDG held by `SoleFunRound` always matches the only unsettled round pool during normal play,
+   and is zero after emergency recovery;
+2. finalized payout accounting never exceeds its round pool, and empty or solo rounds never send a
+   buyback allocation.
+
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs two independent GitHub Actions jobs:
+`.github/workflows/ci.yml` defines two independent GitHub Actions jobs:
 
 - `Web build` installs locked npm dependencies and runs `npm run build`.
 - `Contract tests` installs Foundry, checks formatting and runs the complete Solidity suite offline.
 
 Mainnet deployer keys, keeper credentials and Pinata secrets are not required to build or test.
+GitHub only shows the external green check after this workflow is published to the public repository.
+If a Personal Access Token is used for that publish, it must include the GitHub `workflow` permission.
 
 ## Coverage
 
@@ -76,8 +87,8 @@ Latest local coverage snapshot for the live contracts:
 | `SoleFunRound.sol` | 85.82% | 82.80% | 50.00% | 81.25% |
 | `SoleFunKeeperV2.sol` | 82.22% | 78.43% | 72.73% | 75.00% |
 
-The repository still includes the older `SoleFunKeeper.sol` deployment path and Foundry scripts,
-which are not part of the live V2 system and lower the all-files aggregate coverage.
+The repository still includes the older `SoleFunKeeper.sol` deployment path for historical context.
+It is not the live automation contract; the live system uses `SoleFunKeeperV2.sol`.
 
 ## What passing tests do not prove
 
@@ -86,3 +97,7 @@ settlement check. Operational failures can still come from RPC outages, insuffic
 Pinata configuration, gateway availability, wallet UX or VPS downtime. The emergency withdrawal
 path remains an explicit trust tradeoff: the owner can permanently stop the game and recover
 contract-held USDG to the immutable creator address.
+
+The live keeper owner is also an explicit operational trust boundary: the owner can pause automation,
+rotate the keeper signer, forward future-round configuration and forward emergency recovery. A
+multisig owner is recommended before treating the system as ready for broad public liquidity.

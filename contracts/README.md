@@ -80,5 +80,9 @@ forge script script/DeploySoleFunRound.s.sol:DeploySoleFunRound \
 ## Security status
 
 The included Foundry tests cover payout splits, solo-entry refunds, voting constraints, future-round
-configuration, early-finalization rejection, token gating, and emergency recovery. They are not an
-independent security audit. Do not treat this repository or its tests as a guarantee of safety.
+configuration, early-finalization rejection, token gating, keeper behavior, invariant/property pool
+accounting, and emergency recovery. They are not an independent security audit. Do not treat this
+repository or its tests as a guarantee of safety.
+
+`SoleFunKeeper.sol` is retained as a legacy reference. The live automation contract is
+`SoleFunKeeperV2.sol`.

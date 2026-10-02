@@ -11,6 +11,8 @@ interface ISoleFunRound {
 /// @notice A small permissioned trigger that finalizes ended SoleFun rounds.
 /// @dev This contract cannot wake itself up. An authorized keeper wallet or
 /// automation service must call performUpkeep after the round has ended.
+/// @dev Legacy reference only. The live mainnet automation contract is
+/// SoleFunKeeperV2 at 0x5956a06B5b2D93416392C04aF52c2c38864730f3.
 contract SoleFunKeeper {
     ISoleFunRound public immutable roundContract;
     bytes4 private constant GET_ROUND_SELECTOR = bytes4(keccak256("getRound(uint256)"));

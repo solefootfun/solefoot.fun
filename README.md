@@ -85,7 +85,7 @@ temporarily offline, USDG remains in the round contract and upkeep can be retrie
 
 ## Proof, not promises
 
-The Foundry suite currently contains **25 contract tests** covering:
+The Foundry suite currently contains **27 contract checks** covering:
 
 - 70/30 competitive settlement and most-voted winner selection
 - 100% return to a solo entrant
@@ -98,9 +98,13 @@ The Foundry suite currently contains **25 contract tests** covering:
 - optional historical token-gate snapshots
 - owner-only emergency recovery and permanent stop behavior
 - Keeper V2 ownership, pause, authorized upkeep, restart and emergency forwarding
+- invariant/property runs where randomized start, enter, vote, warp, finalize and emergency actions
+  must keep held USDG aligned with the unsettled pool and keep settled payouts below each pool
 
-GitHub Actions runs the frontend production build, Solidity formatting check, and complete Foundry
-suite on every push and pull request. The checks do not require mainnet keys.
+The repository includes a GitHub Actions workflow definition for the frontend production build,
+Solidity formatting check and complete Foundry suite. Publishing or changing that workflow through a
+GitHub token requires the token to include `workflow` permission. Until GitHub shows a green Actions
+run on the repository, run the same checks locally:
 
 ```bash
 npm ci
@@ -118,6 +122,7 @@ forge test --offline
 | [Contracts and live addresses](docs/CONTRACTS.md) | Ownership, public methods, payouts and emergency behavior |
 | [Testing guide](docs/TESTING.md) | What is covered, how to run it and what tests cannot guarantee |
 | [Live proof](docs/LIVE_PROOF.md) | Mainnet deployment, automation and settlement evidence |
+| [Security notes](docs/SECURITY.md) | Owner powers, emergency recovery and launch trust boundaries |
 | [Contract deployment notes](contracts/README.md) | Foundry configuration and deployment commands |
 
 ## Local development
@@ -147,6 +152,10 @@ test/         Foundry contract tests
 This software handles real mainnet funds. Passing tests are not an independent audit. The emergency
 withdrawal path permanently stops the game and sends contract-held USDG to the immutable original
 deployer address. Review the source, operational assumptions and live contract state before use.
+
+The live keeper is still controlled by a single owner key for pause, keeper rotation, future-round
+config forwarding and emergency forwarding. For a larger public launch, move that owner to a multisig
+or deploy a stricter keeper before advertising the system as trust-minimized.
 
 <div align="center">
   <sub>built from the ground up — toe by toe.</sub>

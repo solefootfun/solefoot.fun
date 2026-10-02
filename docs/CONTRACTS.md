@@ -52,6 +52,10 @@ The V2 owner can update the authorized keeper wallet, pause automation, forward 
 configuration calls and invoke emergency recovery. The configured keeper wallet can perform upkeep
 but cannot use owner configuration methods.
 
+That owner key is a real trust boundary. Before broad public liquidity, the recommended upgrade is
+to move Keeper V2 ownership to a multisig or deploy a stricter admin layer. Tests verify access
+control behavior, but they do not remove single-key operational risk.
+
 ## Events used as proof
 
 - `RoundStarted`
